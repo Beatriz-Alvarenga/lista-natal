@@ -38,6 +38,12 @@ img { max-width: 100%; }
   --line: #c9d6cc;
   --overlay: rgba(14, 33, 21, .55);
   --snow: rgba(150, 185, 165, .55);
+  --orn-blue: #2f6fd6;
+  --orn-red: #d42f45;
+  --orn-green: #23964f;
+  --orn-yellow: #f2bf2f;
+  --orn-cap: #c9a64a;
+  --orn-opacity: .42;
   --font-display: "Caprasimo", "Georgia", serif;
   --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --radius: 14px;
@@ -50,7 +56,7 @@ img { max-width: 100%; }
     --tag-line: rgba(244, 230, 204, .10);
     --box-red: #8e1a2d; --box-green: #154f2f; --box-gold: #a07c25;
     --rib-gold: #e0b54e; --rib-red: #c53346; --rib-green: #2f7d52; --surface: #15291c; --line: #2a4434;
-    --overlay: rgba(0, 0, 0, .65); --snow: rgba(255, 255, 255, .55);
+    --overlay: rgba(0, 0, 0, .65); --snow: rgba(255, 255, 255, .55); --orn-opacity: .3;
     color-scheme: dark;
   }
 }
@@ -61,7 +67,7 @@ img { max-width: 100%; }
   --tag-line: rgba(244, 230, 204, .10);
   --box-red: #8e1a2d; --box-green: #154f2f; --box-gold: #a07c25;
   --rib-gold: #e0b54e; --rib-red: #c53346; --rib-green: #2f7d52; --surface: #15291c; --line: #2a4434;
-  --overlay: rgba(0, 0, 0, .65); --snow: rgba(255, 255, 255, .55);
+  --overlay: rgba(0, 0, 0, .65); --snow: rgba(255, 255, 255, .55); --orn-opacity: .3;
   color-scheme: dark;
 }
 
@@ -75,6 +81,20 @@ body {
   min-height: 100%;
 }
 #snow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+/* Bolinhas de árvore de Natal ao fundo */
+#ornaments { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.orn {
+  position: absolute; border-radius: 50%; opacity: var(--orn-opacity);
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255,255,255,.8) 0 7%, transparent 8%),
+    radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--c) 60%, #fff) 0%, var(--c) 45%, color-mix(in srgb, var(--c) 65%, #000) 100%);
+  animation: orn-sway 5s ease-in-out infinite alternate;
+  transform-origin: 50% -30%;
+}
+.orn::before { content: ""; position: absolute; top: -12%; left: 50%; width: 30%; height: 16%; transform: translateX(-50%); background: var(--orn-cap); border-radius: 3px 3px 1px 1px; }
+.orn::after { content: ""; position: absolute; top: -26%; left: 50%; width: 16%; height: 16%; transform: translateX(-50%); border: 2px solid var(--orn-cap); border-radius: 50%; box-sizing: border-box; }
+@keyframes orn-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
 
 .wrap {
   position: relative; z-index: 1;
@@ -213,6 +233,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--pine); outline: 
 
 @media (prefers-reduced-motion: reduce) {
   .box-wrap { transition: none; }
+  .orn { animation: none; }
   .box-wrap:hover { transform: none; }
   .btn { transition: none; }
 }
@@ -221,13 +242,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--pine); outline: 
 <body>
 
 
+<div id="ornaments" aria-hidden="true"></div>
 <canvas id="snow" aria-hidden="true"></canvas>
 
 <div class="wrap">
   <header class="top">
     <div class="top-text">
       <p class="eyebrow">Natal 2026</p>
-      <h1>Lista de Desejos <span class="star">✦</span></h1>
+      <h1><span class="star" aria-hidden="true">✦</span> Lista de Desejos <span class="star" aria-hidden="true">✦</span></h1>
       <p class="lede">Cada pessoa tem sua caixa de presente. Coloque o que você gostaria de ganhar, com o link da loja se tiver, e suas medidas quando for roupa ou sapato. Clique em um presente para editar.</p>
       <div class="countdown" id="countdown" hidden><b id="days">0</b><span id="days-label">dias até o Natal</span></div>
     </div>
@@ -333,7 +355,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--pine); outline: 
     if (!people.length) {
       board.append(el("div", { class: "empty" },
         el("h2", { text: "Ninguém na lista ainda" }),
-        el("p", { text: canWrite ? "Comece adicionando seu nome. Cada pessoa ganha uma etiqueta onde pode listar os presentes que gostaria de ganhar." : "Assim que alguém adicionar seu nome, a etiqueta aparece aqui." }),
+        el("p", { text: canWrite ? "Comece adicionando seu nome. Cada pessoa ganha uma caixa de presente onde pode listar os presentes que gostaria de ganhar." : "Assim que alguém adicionar seu nome, a caixa de presente aparece aqui." }),
         canWrite ? el("button", { class: "btn btn-primary", type: "button", onclick: () => openPerson() }, "Adicionar a primeira pessoa") : null
       ));
       return;
@@ -691,6 +713,30 @@ input:focus, select:focus, textarea:focus { border-color: var(--pine); outline: 
 
   $("#add-person").addEventListener("click", () => openPerson());
   start();
+
+  // ---------- Bolinhas de Natal ----------
+  (function ornaments() {
+    const box = $("#ornaments");
+    const colors = ["var(--orn-blue)", "var(--orn-red)", "var(--orn-green)", "var(--orn-yellow)"];
+    let seed = 25122026;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const cols = 6, rows = 4;
+    let i = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const size = Math.round(16 + rnd() * 50);
+        const o = document.createElement("span");
+        o.className = "orn";
+        o.style.width = o.style.height = size + "px";
+        o.style.left = ((c + .15 + rnd() * .7) / cols * 100).toFixed(2) + "%";
+        o.style.top = ((r + .15 + rnd() * .7) / rows * 100).toFixed(2) + "%";
+        o.style.setProperty("--c", colors[(i + r) % colors.length]);
+        o.style.animationDelay = (-rnd() * 5).toFixed(2) + "s";
+        box.append(o);
+        i++;
+      }
+    }
+  })();
 
   // ---------- Neve ----------
   (function snow() {
